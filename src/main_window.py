@@ -1,15 +1,12 @@
 import glob
-import itertools
 import re
 import json
 import ntpath
-from os import path, scandir
+from os import path
 import cv2
+import codecs
 
 import shutil
-
-import locale
-from datetime import datetime, timezone
 
 from PyQt5 import QtGui, QtWidgets, uic
 
@@ -93,43 +90,75 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_name, _ = path.splitext(base_name)
 
         if not path.exists(self.img_file_name + '.json'):
-            locale.setlocale(locale.LC_ALL, 'en_US.utf8')
-            fmt = "%a %b %d %Y %H:%M:%S"
-            kst = datetime.now(timezone.utc).strftime(fmt)
 
             cv2_img = cv2.imread(self.img_files[self.img_file_id])
             cv2_img_width = cv2_img.shape[1]
             cv2_img_height = cv2_img.shape[0]
             img_size = path.getsize(self.img_files[self.img_file_id])
 
-            self.box_info = {'info': {'description': 'SMART-X 2020 DATASET', 'version': '1.0',
-                                      'category': 'OCR', 'textline_detection_module': 'CRAFT',
-                                      'text_recognition_module': 'CRNN', 'year': 2020,
-                                      'date_created': kst + ' GMT+0900 (Korean Standard Time)'},
-                             'annotations': {'id': self.file_name, 'image_name': base_name,
-                                             'bboxes': [],
-                                             'text': [],
-                                             'attributes': {'color': 3, 'is_aug': 'False', 'image_size': img_size,
-                                                            'image_width': cv2_img_width, 'image_height': cv2_img_height,
-                                                            'image_path': self.img_files[self.img_file_id]}}}
+            self.box_info = {
+                "dataset_info": {
+                    "description": ".",
+                    "dataset_version": "1.0",
+                    "dateset_created": "",
+                    "attributes": {
+                        "image_augmented": "",
+                        "answer_refined": ""
+                    },
+                    "dataset_created": ""
+                },
+                "image_info": {
+                    "image_name": base_name,
+                    "attributes": {
+                        "color": 3,
+                        "image_size": img_size,
+                        "image_width": cv2_img_width,
+                        "image_height": cv2_img_height,
+                        "image_path": self.img_files[self.img_file_id]
+                    }
+                },
+                "object_info": {
+                    "face": {
+                        "algorithm": {
+                            "face_detect_algorithm": "",
+                            "face_recog_algorithm": "",
+                            "face_age_gender_algorithm": "",
+                            "face_detect_model": "",
+                            "face_recog_model": "",
+                            "face_age_gender_model": ""
+                        },
+                        "result": {
+                            "bboxes": [],
+                            "embeddings": [],
+                            "ids": [],
+                            "ages": [],
+                            "genders": []
+                        }
+                    },
+                    "face_detect_algorithm": "",
+                    "face_recog_algorithm": "",
+                    "face_detect_model": "",
+                    "face_recog_model": "",
+                }
+            }
             with open(self.img_file_name + '.json', 'w', encoding='utf-8') as json_file:
                 json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
 
         else:
-            json_data = open(self.img_file_name + '.json')
-            self.box_info = json.load(json_data)
+            self.box_info = json.load(codecs.open(self.img_file_name + '.json', 'r', 'utf-8-sig'))
+
+        self.img_text = list(map(str, self.box_info['object_info']['face']['result']['ids']))
+        self.img_width = self.box_info['image_info']['attributes']['image_width']
+        self.img_height = self.box_info['image_info']['attributes']['image_height']
 
         # Turn JSON list into list of Points
         self.bboxes = list(map(lambda a: [
-            Point(a[0][0], a[0][1]),
-            Point(a[1][0], a[1][1]),
-            Point(a[2][0], a[2][1]),
-            Point(a[3][0], a[3][1])
-        ], self.box_info['annotations']['bboxes']))
+            Point(self.img_width*a[0], self.img_height*a[1]),
+            Point(self.img_width*a[0] + self.img_width*a[2], self.img_height*a[1]),
+            Point(self.img_width*a[0] + self.img_width*a[2], self.img_height*a[1] + self.img_height*a[3]),
+            Point(self.img_width*a[0], self.img_height * a[1] + self.img_height * a[3])
+        ], self.box_info['object_info']['face']['result']['bboxes']))
 
-        self.img_text = self.box_info['annotations']['text']
-        self.img_width = self.box_info['annotations']['attributes']['image_width']
-        self.img_height = self.box_info['annotations']['attributes']['image_height']
         self.text_id = 0
         self.ui.value.clear()
         self.update_text_list_ui()
@@ -202,22 +231,41 @@ class MainWindow(QtWidgets.QMainWindow):
     def save_action(self):
         """Save data back to json file."""
         try:
-            self.img_text[self.text_id] = self.ui.value.text()
+            #check if the input can be converted to int
+            self.img_text[self.text_id] = int(self.ui.value.text())
+            self.img_text[self.text_id] = str(self.ui.value.text())
             self.update_text_list_ui()
 
-            # Turn list of Points back into JSON list
-            self.box_info['annotations']['bboxes'] = \
-                [list(itertools.chain(*[[p.x, p.y] for p in bbox])) for bbox in self.bboxes]
-            original_file = self.img_file_name + '.json~'
+            self.box_info['dataset_info']['attributes']['answer_refined'] = True
 
+            self.box_info['object_info']['face']['result']['ids'] = list(map(int, self.img_text))
+
+            # Turn list of Points back into JSON list
+            self.box_info['object_info']['face']['result']['bboxes'] = []
+            for idx1, bbox in enumerate(self.bboxes):
+                self.box_info['object_info']['face']['result']['bboxes'].append([0,0,0,0])
+                for idx2, p in enumerate(bbox):
+                    if idx2 == 0:
+                        self.box_info['object_info']['face']['result']['bboxes'][idx1][0] = p.x/self.img_width
+                        self.box_info['object_info']['face']['result']['bboxes'][idx1][1] = p.y/self.img_height
+
+                    if idx2 == 1:
+                        self.box_info['object_info']['face']['result']['bboxes'][idx1][2] = \
+                            p.x/self.img_width - self.box_info['object_info']['face']['result']['bboxes'][idx1][0]
+
+                    if idx2 == 3:
+                        self.box_info['object_info']['face']['result']['bboxes'][idx1][3] = \
+                            p.y/self.img_height - self.box_info['object_info']['face']['result']['bboxes'][idx1][1]
+
+            original_file = self.img_file_name + '.json~'
             shutil.copy2(self.img_file_name + '.json', original_file)
 
             with open(self.img_file_name + '.json', 'w', encoding='utf-8') as json_file:
                 json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
 
             self.ui.save_alert.setText("Saved!")
-        except IndexError:
-            self.ui.save_alert.setText("Text Not Entered!")
+        except (IndexError, ValueError):
+            self.ui.save_alert.setText("Invalid Text")
 
     def delete_action(self):
         """Delete current selected bbox."""

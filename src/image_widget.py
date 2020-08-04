@@ -4,7 +4,6 @@ from PyQt5.QtGui import QPolygon
 
 from . import Point
 
-
 class _DragMode:
     """Index of current bounding box being modified."""
     bbox_idx = None
