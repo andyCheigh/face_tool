@@ -1,0 +1,45 @@
+{
+    "dataset_info": {
+        "description": ".",
+        "dataset_version": "1.0",
+        "dateset_created": "",
+        "attributes": {
+            "image_augmented": "",
+            "answer_refined": ""
+        },
+        "dataset_created": ""
+    },
+    "image_info": {
+        "image_name": "nojson.jpg",
+        "attributes": {
+            "color": 3,
+            "image_size": 314374,
+            "image_width": 1200,
+            "image_height": 630,
+            "image_path": "/home/cheigh/PycharmProjects/face_tool/bff/nojson.jpg"
+        }
+    },
+    "object_info": {
+        "face": {
+            "algorithm": {
+                "face_detect_algorithm": "",
+                "face_recog_algorithm": "",
+                "face_age_gender_algorithm": "",
+                "face_detect_model": "",
+                "face_recog_model": "",
+                "face_age_gender_model": ""
+            },
+            "result": {
+                "bboxes": [],
+                "embeddings": [],
+                "ids": [],
+                "ages": [],
+                "genders": []
+            }
+        },
+        "face_detect_algorithm": "",
+        "face_recog_algorithm": "",
+        "face_detect_model": "",
+        "face_recog_model": ""
+    }
+}

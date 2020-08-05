@@ -2,6 +2,7 @@ import glob
 import re
 import json
 import ntpath
+import os
 from os import path
 import cv2
 import codecs
@@ -88,6 +89,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.img_file_name, _ = path.splitext(self.img_files[self.img_file_id])
         base_name = ntpath.basename(self.img_files[self.img_file_id])
         self.file_name, _ = path.splitext(base_name)
+
+        if not path.exists(self.dir_name + "/Ans/"):
+            os.makedirs(self.dir_name + "/Ans/")
 
         if not path.exists(self.dir_name + "/Ans/Ans_" + self.file_name + '.json'):
 
@@ -315,6 +319,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(indexes) <= 0:
             return
         self.text_id = indexes[0].row()
-        self.color_change = len(self.bboxes) * [False]
-        self.color_change[self.text_id] = True
+        if self.bboxes:
+            self.color_change = len(self.bboxes) * [False]
+            self.color_change[self.text_id] = True
         self.update_ui()
