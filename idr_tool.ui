@@ -203,7 +203,7 @@
     <string>Delete Current Box</string>
    </property>
    <property name="shortcut">
-    <string>Backspace</string>
+    <string>Ctrl+D</string>
    </property>
   </action>
   <action name="actionNewBox">

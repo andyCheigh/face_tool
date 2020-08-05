@@ -35,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.box_info = {}
         self.bboxes = []
         self.img_text = []
+        self.color_change = []
         self.init_widgets()
 
     def init_widgets(self):
@@ -56,8 +57,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def load_action(self):
         """Open file dialog and get directory of images."""
         self.dir_name = QtWidgets.QFileDialog.getExistingDirectory(self)
-        self.img_files = glob.glob(self.dir_name + '/**/*.jpg', recursive=True)
-        self.img_files.extend(glob.glob(self.dir_name + '/**/*.png', recursive=True))
+        self.img_files = glob.glob(self.dir_name + '/*.jpg')
+        self.img_files.extend(glob.glob(self.dir_name + '/*.png'))
 
         self.img_files = MainWindow.sort_string(self.img_files)
         self.img_file_id = 0
@@ -84,12 +85,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def process_image(self):
         """Load json data for current file."""
-
         self.img_file_name, _ = path.splitext(self.img_files[self.img_file_id])
         base_name = ntpath.basename(self.img_files[self.img_file_id])
         self.file_name, _ = path.splitext(base_name)
 
-        if not path.exists(self.img_file_name + '.json'):
+        if not path.exists(self.dir_name + "/Ans/Ans_" + self.file_name + '.json'):
 
             cv2_img = cv2.imread(self.img_files[self.img_file_id])
             cv2_img_width = cv2_img.shape[1]
@@ -141,13 +141,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     "face_recog_model": "",
                 }
             }
-            with open(self.img_file_name + '.json', 'w', encoding='utf-8') as json_file:
+            with open(self.dir_name + "/Ans/Ans_" + self.file_name + '.json',
+                      'w', encoding='utf-8') as json_file:
                 json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
 
         else:
-            self.box_info = json.load(codecs.open(self.img_file_name + '.json', 'r', 'utf-8-sig'))
+            self.box_info = json.load(codecs.open(self.dir_name + "/Ans/Ans_" + self.file_name + '.json', 'r', 'utf-8-sig'))
 
-        self.img_text = list(map(str, self.box_info['object_info']['face']['result']['ids']))
+        self.img_text = self.box_info['object_info']['face']['result']['ids']
         self.img_width = self.box_info['image_info']['attributes']['image_width']
         self.img_height = self.box_info['image_info']['attributes']['image_height']
 
@@ -158,6 +159,8 @@ class MainWindow(QtWidgets.QMainWindow):
             Point(self.img_width*a[0] + self.img_width*a[2], self.img_height*a[1] + self.img_height*a[3]),
             Point(self.img_width*a[0], self.img_height * a[1] + self.img_height * a[3])
         ], self.box_info['object_info']['face']['result']['bboxes']))
+
+        self.color_change = len(self.bboxes) * [False]
 
         self.text_id = 0
         self.ui.value.clear()
@@ -232,13 +235,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """Save data back to json file."""
         try:
             #check if the input can be converted to int
-            self.img_text[self.text_id] = int(self.ui.value.text())
-            self.img_text[self.text_id] = str(self.ui.value.text())
+            self.img_text[self.text_id] = self.ui.value.text()
             self.update_text_list_ui()
 
             self.box_info['dataset_info']['attributes']['answer_refined'] = True
 
-            self.box_info['object_info']['face']['result']['ids'] = list(map(int, self.img_text))
+            self.box_info['object_info']['face']['result']['ids'] = self.img_text
 
             # Turn list of Points back into JSON list
             self.box_info['object_info']['face']['result']['bboxes'] = []
@@ -257,14 +259,14 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.box_info['object_info']['face']['result']['bboxes'][idx1][3] = \
                             p.y/self.img_height - self.box_info['object_info']['face']['result']['bboxes'][idx1][1]
 
-            original_file = self.img_file_name + '.json~'
-            shutil.copy2(self.img_file_name + '.json', original_file)
+            original_file = self.dir_name + "/Ans/Ans_" + self.file_name + '.json~'
+            shutil.copy2(self.dir_name + "/Ans/Ans_" + self.file_name + '.json', original_file)
 
-            with open(self.img_file_name + '.json', 'w', encoding='utf-8') as json_file:
+            with open(self.dir_name + "/Ans/Ans_" + self.file_name + '.json', 'w', encoding='utf-8') as json_file:
                 json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
 
             self.ui.save_alert.setText("Saved!")
-        except (IndexError, ValueError):
+        except IndexError:
             self.ui.save_alert.setText("Invalid Text")
 
     def delete_action(self):
@@ -313,4 +315,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(indexes) <= 0:
             return
         self.text_id = indexes[0].row()
+        self.color_change = len(self.bboxes) * [False]
+        self.color_change[self.text_id] = True
         self.update_ui()

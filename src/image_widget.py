@@ -79,15 +79,26 @@ class ImageWidget(QtWidgets.QLabel):
         """Draws bounding box and dragging handle."""
         super().paintEvent(event)
         painter = QtGui.QPainter(self)
-        painter.setPen(QtGui.QPen(Qt.blue, 3))
 
-        for bbox in self.parent.bboxes:
-            # Draw bounding box
-            painter.setBrush(Qt.NoBrush)  # No fill
-            painter.drawPolygon(self.bbox_to_polygon(bbox))
+        for i, bbox in enumerate(self.parent.bboxes):
+            if not self.parent.color_change[i]:
+                painter.setPen(QtGui.QPen(Qt.blue, 3))
+                # Draw bounding box
+                painter.setBrush(Qt.NoBrush)  # No fill
+                painter.drawPolygon(self.bbox_to_polygon(bbox))
 
-            # Draw dragging handles
-            painter.setBrush(QtGui.QBrush(Qt.blue))  # Fill blue
+                # Draw dragging handles
+                painter.setBrush(QtGui.QBrush(Qt.blue))  # Fill blue
+
+            else:
+                painter.setPen(QtGui.QPen(Qt.green, 3))
+                # Draw bounding box
+                painter.setBrush(Qt.NoBrush)  # No fill
+                painter.drawPolygon(self.bbox_to_polygon(bbox))
+
+                # Draw dragging handles
+                painter.setBrush(QtGui.QBrush(Qt.green))  # Fill blue
+
             for point in bbox:
                 scaled = self.img_to_qt(point)
                 painter.drawEllipse(scaled.x - ImageWidget.DRAG_RADIUS,
@@ -119,6 +130,8 @@ class ImageWidget(QtWidgets.QLabel):
                 selected = True
 
             if selected:
+                self.parent.color_change = len(self.parent.bboxes)*[False]
+                self.parent.color_change[i] = True
                 self.parent.text_id = i
                 self.parent.update_text_list_ui()
                 self.parent.update_ui()
@@ -143,21 +156,19 @@ class ImageWidget(QtWidgets.QLabel):
             corners = []
 
             if isinstance(self.drag_mode, _SizeMode):
-                if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
-                    corners = [
-                        (self.drag_mode.corner_idx, delta),
-                        (
-                            (self.drag_mode.corner_idx + 1) % 4,
-                            Point(delta.x, 0) if self.drag_mode.corner_idx % 2 else Point(0, delta.y)
+                corners = [
+                    (self.drag_mode.corner_idx, delta),
+                    (
+                        (self.drag_mode.corner_idx + 1) % 4,
+                        Point(delta.x, 0) if self.drag_mode.corner_idx % 2 else Point(0, delta.y)
 
-                        ),
-                        (
-                            (self.drag_mode.corner_idx - 1) % 4,
-                            Point(0, delta.y) if self.drag_mode.corner_idx % 2 else Point(delta.x, 0)
-                        )
-                    ]
-                else:
-                    corners = [(self.drag_mode.corner_idx, delta)]
+                    ),
+                    (
+                        (self.drag_mode.corner_idx - 1) % 4,
+                        Point(0, delta.y) if self.drag_mode.corner_idx % 2 else Point(delta.x, 0)
+                    )
+                ]
+
             elif isinstance(self.drag_mode, _PositionMode):
                 corners = [(i, delta) for i in range(len(bbox))]
 

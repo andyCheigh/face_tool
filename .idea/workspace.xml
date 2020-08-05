@@ -2,7 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4e0e6b5e-7037-41b4-8464-d51045288ca4" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/idr_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/face_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/idr_tool.ui" beforeDir="false" afterPath="$PROJECT_DIR$/idr_tool.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/samples (backup)/multiface.json" beforeDir="false" afterPath="$PROJECT_DIR$/samples (backup)/multiface.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/samples/multiface.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/samples/multiface.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/image_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/image_widget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main_window.py" afterDir="false" />
     </list>
