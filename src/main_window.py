@@ -90,10 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         base_name = ntpath.basename(self.img_files[self.img_file_id])
         self.file_name, _ = path.splitext(base_name)
 
-        if not path.exists(self.dir_name + "/Ans/"):
-            os.makedirs(self.dir_name + "/Ans/")
-
-        if not path.exists(self.dir_name + "/Ans/Ans_" + self.file_name + '.json'):
+        if not path.exists(self.dir_name + "/" + self.file_name + '.json'):
 
             cv2_img = cv2.imread(self.img_files[self.img_file_id])
             cv2_img_width = cv2_img.shape[1]
@@ -145,12 +142,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     "face_recog_model": "",
                 }
             }
-            with open(self.dir_name + "/Ans/Ans_" + self.file_name + '.json',
+            with open(self.dir_name + "/" + self.file_name + '.json',
                       'w', encoding='utf-8') as json_file:
                 json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
 
         else:
-            self.box_info = json.load(codecs.open(self.dir_name + "/Ans/Ans_" + self.file_name + '.json', 'r', 'utf-8-sig'))
+            self.box_info = json.load(codecs.open(self.dir_name + "/" + self.file_name + '.json', 'r', 'utf-8-sig'))
 
         self.img_text = self.box_info['object_info']['face']['result']['ids']
         self.img_width = self.box_info['image_info']['attributes']['image_width']
@@ -263,10 +260,10 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.box_info['object_info']['face']['result']['bboxes'][idx1][3] = \
                             p.y/self.img_height - self.box_info['object_info']['face']['result']['bboxes'][idx1][1]
 
-            original_file = self.dir_name + "/Ans/Ans_" + self.file_name + '.json~'
-            shutil.copy2(self.dir_name + "/Ans/Ans_" + self.file_name + '.json', original_file)
+            original_file = self.dir_name + "/" + self.file_name + '.json~'
+            shutil.copy2(self.dir_name + "/" + self.file_name + '.json', original_file)
 
-            with open(self.dir_name + "/Ans/Ans_" + self.file_name + '.json', 'w', encoding='utf-8') as json_file:
+            with open(self.dir_name + "/" + self.file_name + '.json', 'w', encoding='utf-8') as json_file:
                 json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
 
             self.ui.save_alert.setText("Saved!")
