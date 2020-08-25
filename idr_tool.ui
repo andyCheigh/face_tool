@@ -117,7 +117,7 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLineEdit" name="value"/>
+         <widget class="QComboBox" name="idComboBox"/>
         </item>
         <item>
          <spacer name="horizontalSpacer_2">
@@ -160,7 +160,7 @@
      <x>0</x>
      <y>0</y>
      <width>980</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

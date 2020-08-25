@@ -164,7 +164,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.color_change = len(self.bboxes) * [False]
 
         self.text_id = 0
-        self.ui.value.clear()
+        self.update_id_combo_box_ui()
         self.update_text_list_ui()
 
     def update_ui(self):
@@ -192,9 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.textList.setCurrentIndex(
             self.ui.textList.model().createIndex(self.text_id if self.text_id else 0, 0))
 
-        # Update text
-        if self.img_text:
-            self.ui.value.setText(self.img_text[self.text_id])
+        self.update_id_combo_box_ui()
 
     def update_file_list_ui(self):
         """Update model for file list."""
@@ -210,6 +208,19 @@ class MainWindow(QtWidgets.QMainWindow):
         for name in self.img_text:
             model.appendRow(QtGui.QStandardItem(name))
         self.ui.textList.setModel(model)
+
+    def update_id_combo_box_ui(self):
+        with open('id_cand_list.txt', 'r') as f:
+            items = f.read().splitlines()
+
+    
+        if self.img_text[self.text_id] not in items: # Add current id if not present in list
+            items.insert(0, self.img_text[self.text_id])
+
+        self.ui.idComboBox.setCurrentIndex(-1)
+        self.ui.idComboBox.clear()
+        self.ui.idComboBox.addItems(items)
+        self.ui.idComboBox.setCurrentIndex(items.index(self.img_text[self.text_id]))
 
     def prev_button_action(self):
         """Go to previous image, do nothing if already at beginning."""
@@ -236,7 +247,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Save data back to json file."""
         try:
             #check if the input can be converted to int
-            self.img_text[self.text_id] = self.ui.value.text()
+            self.img_text[self.text_id] = self.ui.idComboBox.currentText()
             self.update_text_list_ui()
 
             self.box_info['dataset_info']['attributes']['answer_refined'] = True
