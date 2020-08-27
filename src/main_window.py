@@ -216,6 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
         if self.img_text[self.text_id] not in items: # Add current id if not present in list
             items.insert(0, self.img_text[self.text_id])
+            self.ui.save_alert.setText("Not in the list")
 
         self.ui.idComboBox.setCurrentIndex(-1)
         self.ui.idComboBox.clear()
