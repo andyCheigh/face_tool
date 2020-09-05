@@ -5,4 +5,4 @@ Face Tool provides a convenient GUI for non-tech users to work on face image pre
 ### Requirement
 - Linux & MacOS
 - Anaconda
-- conda env create -f environment.yml
+- `conda env create -f environment.yml`
