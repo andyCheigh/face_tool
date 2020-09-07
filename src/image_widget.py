@@ -91,13 +91,17 @@ class ImageWidget(QtWidgets.QLabel):
                 painter.setBrush(QtGui.QBrush(Qt.blue))  # Fill blue
 
             else:
-                painter.setPen(QtGui.QPen(Qt.green, 3))
+                if self.parent.ui.save_alert.text() == 'Not in the list':
+                    painter.setPen(QtGui.QPen(Qt.red, 3))
+                    painter.setBrush(QtGui.QBrush(Qt.red))
+
+                else:
+                    painter.setPen(QtGui.QPen(Qt.green, 3))
+                    painter.setBrush(QtGui.QBrush(Qt.green))
+                    
                 # Draw bounding box
                 painter.setBrush(Qt.NoBrush)  # No fill
                 painter.drawPolygon(self.bbox_to_polygon(bbox))
-
-                # Draw dragging handles
-                painter.setBrush(QtGui.QBrush(Qt.green))  # Fill blue
 
             for point in bbox:
                 scaled = self.img_to_qt(point)
