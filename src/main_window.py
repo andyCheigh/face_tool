@@ -1,7 +1,6 @@
 import glob
 import re
 import json
-import ntpath
 import os
 import codecs
 import shutil
@@ -18,20 +17,17 @@ class MainWindow(QMainWindow):
         super().__init__()
         uic.loadUi("main_window.ui", self)
 
-        self.dir_name = ''
+        self.img_files = []  # List of absolute paths to all image files
+        self.img_file_idx = None  # Current selected image file index
+        self.img_json_file = ''  # Current selected image JSON file absolute path
+        self.img_json = {}  # Current selected image JSON data
 
-        self.img_files = []
-        self.img_file_idx = None
-        self.img_id_idx = None
-        self.img_height = 0
-        self.img_width = 0
+        self.img_height = 0  # Current selected image height
+        self.img_width = 0  # Current selected image width
+        self.img_bboxes = []  # Current selected image bboxes
+        self.img_ids = []  # Current selected image bbox IDs
+        self.img_bbox_idx = None  # Current selected image - selected box
 
-        self.img_file_name = ''
-        self.file_name = ''
-
-        self.box_info = {}
-        self.bboxes = []
-        self.img_ids = []
         self.color_change = []
         self.init_widgets()
 
@@ -53,47 +49,40 @@ class MainWindow(QMainWindow):
 
     def load_action(self):
         """Open file dialog and get directory of images."""
-        self.dir_name = QFileDialog.getExistingDirectory(self)
-        self.img_files = glob.glob(self.dir_name + '/*.jpg')
-        self.img_files.extend(glob.glob(self.dir_name + '/*.png'))
+        dir_name = QFileDialog.getExistingDirectory(self)
+        self.img_files = glob.glob(f"{dir_name}/*.jpg")
+        self.img_files.extend(glob.glob(f"{dir_name}/*.png"))
 
-        self.img_files = MainWindow.sort_string(self.img_files)
+        def key(string):
+            key_list = []
+            for c in re.split('([0-9]+)', string):
+                if string.isdigit():
+                    key_list.append(int(string))
+                else:
+                    key_list.append(string.lower())
+
+            return key_list
+
+        self.img_files = sorted(self.img_files, key=key)
         self.img_file_idx = 0
 
         self.process_image()
         self.update_file_list_ui()
         self.update_ui()
 
-    @staticmethod
-    def sort_string(strings):
-        """Sort images by filename."""
-        def _key(string):
-            if string.isdigit():
-                return int(string)
-            return string.lower()
-
-        def _alpha_key(string):
-            key = []
-            for c in re.split('([0-9]+)', string):
-                key.append(_key(c))
-            return key
-
-        return sorted(strings, key=_alpha_key)
-
     def process_image(self):
         """Load json data for current file."""
-        self.img_file_name = os.path.splitext(self.img_files[self.img_file_idx])[0]
-        base_name = ntpath.basename(self.img_files[self.img_file_idx])
-        self.file_name = os.path.splitext(base_name)[0]
+        dir_name = os.path.dirname(self.img_files[self.img_file_idx])
+        file_root = os.path.splitext(os.path.basename(self.img_files[self.img_file_idx]))[0]
+        self.img_json_file = os.path.join(dir_name, f"{file_root}.json")
 
-        if not os.path.exists(self.dir_name + "/" + self.file_name + '.json'):
-
+        if not os.path.exists(self.img_json_file):
             cv2_img = cv2.imread(self.img_files[self.img_file_idx])
             cv2_img_width = cv2_img.shape[1]
             cv2_img_height = cv2_img.shape[0]
             img_size = os.path.getsize(self.img_files[self.img_file_idx])
 
-            self.box_info = {
+            self.img_json = {
                 "dataset_info": {
                     "description": ".",
                     "dataset_version": "1.0",
@@ -105,7 +94,7 @@ class MainWindow(QMainWindow):
                     "dataset_created": ""
                 },
                 "image_info": {
-                    "image_name": base_name,
+                    "image_name": file_root,
                     "attributes": {
                         "color": 3,
                         "image_size": img_size,
@@ -138,30 +127,28 @@ class MainWindow(QMainWindow):
                     "face_recog_model": "",
                 }
             }
-            with open(self.dir_name + "/" + self.file_name + '.json',
-                      'w', encoding='utf-8') as json_file:
-                json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
+            with open(self.img_json_file, 'w', encoding='utf-8') as json_file:
+                json.dump(self.img_json, json_file, ensure_ascii=False, indent=4)
 
         else:
-            self.box_info = json.load(codecs.open(self.dir_name + "/" +
-                                                  self.file_name + '.json', 'r', 'utf-8-sig'))
+            self.img_json = json.load(codecs.open(self.img_json_file, 'r', 'utf-8-sig'))
 
-        self.img_ids = self.box_info['object_info']['face']['result']['ids']
-        self.img_width = self.box_info['image_info']['attributes']['image_width']
-        self.img_height = self.box_info['image_info']['attributes']['image_height']
+        self.img_ids = self.img_json['object_info']['face']['result']['ids']
+        self.img_width = self.img_json['image_info']['attributes']['image_width']
+        self.img_height = self.img_json['image_info']['attributes']['image_height']
 
         # Turn JSON list into list of Points
-        self.bboxes = list(map(lambda a: [
+        self.img_bboxes = list(map(lambda a: [
             Point(self.img_width * a[0], self.img_height * a[1]),
             Point(self.img_width * a[0] + self.img_width * a[2], self.img_height * a[1]),
             Point(self.img_width * a[0] + self.img_width * a[2],
                   self.img_height * a[1] + self.img_height * a[3]),
             Point(self.img_width * a[0], self.img_height * a[1] + self.img_height * a[3])
-        ], self.box_info['object_info']['face']['result']['bboxes']))
+        ], self.img_json['object_info']['face']['result']['bboxes']))
 
-        self.color_change = len(self.bboxes) * [False]
+        self.color_change = len(self.img_bboxes) * [False]
 
-        self.img_id_idx = 0
+        self.img_bbox_idx = 0
         self.update_id_combo_box_ui()
         self.update_text_list_ui()
 
@@ -188,7 +175,7 @@ class MainWindow(QMainWindow):
             self.fileList.model().createIndex(self.img_file_idx if self.img_file_idx else 0, 0))
 
         self.idList.setCurrentIndex(
-            self.idList.model().createIndex(self.img_id_idx if self.img_id_idx else 0, 0))
+            self.idList.model().createIndex(self.img_bbox_idx if self.img_bbox_idx else 0, 0))
 
         self.update_id_combo_box_ui()
 
@@ -196,8 +183,8 @@ class MainWindow(QMainWindow):
         """Update model for file list."""
         model = QtGui.QStandardItemModel()
         for img_file in self.img_files:
-            base_name = ntpath.basename(img_file)
-            model.appendRow(QtGui.QStandardItem(base_name))
+            model.appendRow(QtGui.QStandardItem(os.path.basename(img_file)))
+
         self.fileList.setModel(model)
 
     def update_text_list_ui(self):
@@ -205,21 +192,22 @@ class MainWindow(QMainWindow):
         model = QtGui.QStandardItemModel()
         for name in self.img_ids:
             model.appendRow(QtGui.QStandardItem(name))
+
         self.idList.setModel(model)
 
     def update_id_combo_box_ui(self):
         """Update model for id list."""
-        with open('id_cand_list.txt', 'r') as f:
+        with open('id_cand_list.txt', 'r') as f:  # TODO don't hardcode list path
             items = f.read().splitlines()
 
-        if self.img_ids[self.img_id_idx] not in items:  # Add current id if not present in list
-            items.insert(0, self.img_ids[self.img_id_idx])
+        if self.img_ids[self.img_bbox_idx] not in items:  # Add current id if not present in list
+            items.insert(0, self.img_ids[self.img_bbox_idx])
             self.statusLabel.setText("Not in the list")
 
         self.idComboBox.setCurrentIndex(-1)
         self.idComboBox.clear()
         self.idComboBox.addItems(items)
-        self.idComboBox.setCurrentIndex(items.index(self.img_ids[self.img_id_idx]))
+        self.idComboBox.setCurrentIndex(items.index(self.img_ids[self.img_bbox_idx]))
 
     def prev_button_action(self):
         """Go to previous image, do nothing if already at beginning."""
@@ -246,37 +234,37 @@ class MainWindow(QMainWindow):
         """Save data back to json file."""
         try:
             # check if the input can be converted to int
-            self.img_ids[self.img_id_idx] = self.idComboBox.currentText()
+            self.img_ids[self.img_bbox_idx] = self.idComboBox.currentText()
             self.update_text_list_ui()
 
-            self.box_info['dataset_info']['attributes']['answer_refined'] = True
+            self.img_json['dataset_info']['attributes']['answer_refined'] = True
 
-            self.box_info['object_info']['face']['result']['ids'] = self.img_ids
+            self.img_json['object_info']['face']['result']['ids'] = self.img_ids
 
             # Turn list of Points back into JSON list
-            self.box_info['object_info']['face']['result']['bboxes'] = []
-            for idx1, bbox in enumerate(self.bboxes):
-                self.box_info['object_info']['face']['result']['bboxes'].append([0, 0, 0, 0])
+            self.img_json['object_info']['face']['result']['bboxes'] = []
+            for idx1, bbox in enumerate(self.img_bboxes):
+                self.img_json['object_info']['face']['result']['bboxes'].append([0, 0, 0, 0])
                 for idx2, p in enumerate(bbox):
                     if idx2 == 0:
-                        self.box_info['object_info']['face']['result']['bboxes'][idx1][0] = p.x/self.img_width
-                        self.box_info['object_info']['face']['result']['bboxes'][idx1][1] = p.y/self.img_height
+                        self.img_json['object_info']['face']['result']['bboxes'][idx1][0] = p.x/self.img_width
+                        self.img_json['object_info']['face']['result']['bboxes'][idx1][1] = p.y/self.img_height
 
                     if idx2 == 1:
-                        self.box_info['object_info']['face']['result']['bboxes'][idx1][2] = \
+                        self.img_json['object_info']['face']['result']['bboxes'][idx1][2] = \
                             p.x/self.img_width - \
-                            self.box_info['object_info']['face']['result']['bboxes'][idx1][0]
+                            self.img_json['object_info']['face']['result']['bboxes'][idx1][0]
 
                     if idx2 == 3:
-                        self.box_info['object_info']['face']['result']['bboxes'][idx1][3] = \
+                        self.img_json['object_info']['face']['result']['bboxes'][idx1][3] = \
                             p.y/self.img_height - \
-                            self.box_info['object_info']['face']['result']['bboxes'][idx1][1]
+                            self.img_json['object_info']['face']['result']['bboxes'][idx1][1]
 
-            original_file = self.dir_name + "/" + self.file_name + '.json~'
-            shutil.copy2(self.dir_name + "/" + self.file_name + '.json', original_file)
+            original_file = f"{self.img_json_file}~"
+            shutil.copy2(self.img_json_file, original_file)
 
-            with open(self.dir_name + "/" + self.file_name + '.json', 'w', encoding='utf-8') as json_file:
-                json.dump(self.box_info, json_file, ensure_ascii=False, indent=4)
+            with open(self.img_json_file, 'w', encoding='utf-8') as json_file:
+                json.dump(self.img_json, json_file, ensure_ascii=False, indent=4)
 
             self.statusLabel.setText("Saved!")
         except IndexError:
@@ -284,25 +272,27 @@ class MainWindow(QMainWindow):
 
     def delete_action(self):
         """Delete current selected bbox."""
-        del self.bboxes[self.img_id_idx]
-        del self.img_ids[self.img_id_idx]
+        del self.img_bboxes[self.img_bbox_idx]
+        del self.img_ids[self.img_bbox_idx]
 
-        if self.img_id_idx == len(self.bboxes):
-            self.img_id_idx -= 1
+        if self.img_bbox_idx == len(self.img_bboxes):
+            self.img_bbox_idx -= 1
+
         self.update_text_list_ui()
         self.update_ui()
 
     def new_box_action(self):
         """Add a new box with default size and text."""
-        self.bboxes.append([Point(0, 0), Point(100, 0), Point(100, 100), Point(0, 100)])
+        self.img_bboxes.append([Point(0, 0), Point(100, 0), Point(100, 100), Point(0, 100)])
         self.img_ids.append("--추가해주세요--")
+
         self.update_text_list_ui()
         self.update_ui()
 
     def entire_image_action(self):
         """Change current bbox to cover entire image."""
         try:
-            self.bboxes[self.img_id_idx] = [
+            self.img_bboxes[self.img_bbox_idx] = [
                 Point(0, 0),
                 Point(self.img_width, 0),
                 Point(self.img_width, self.img_height),
@@ -319,6 +309,7 @@ class MainWindow(QMainWindow):
             return
 
         self.img_file_idx = indexes[0].row()
+
         self.process_image()
         self.update_ui()
 
@@ -327,8 +318,9 @@ class MainWindow(QMainWindow):
         indexes = selected.indexes()
         if len(indexes) <= 0:
             return
-        self.img_id_idx = indexes[0].row()
-        if self.bboxes:
-            self.color_change = len(self.bboxes) * [False]
-            self.color_change[self.img_id_idx] = True
+        self.img_bbox_idx = indexes[0].row()
+        if self.img_bboxes:
+            self.color_change = len(self.img_bboxes) * [False]
+            self.color_change[self.img_bbox_idx] = True
+
         self.update_ui()

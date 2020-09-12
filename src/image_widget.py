@@ -81,7 +81,7 @@ class ImageWidget(QtWidgets.QLabel):
         super().paintEvent(event)
         painter = QtGui.QPainter(self)
 
-        for i, bbox in enumerate(self.parent.bboxes):
+        for i, bbox in enumerate(self.parent.img_bboxes):
             if not self.parent.color_change[i]:
                 painter.setPen(QtGui.QPen(Qt.blue, 3))
                 # Draw bounding box
@@ -117,7 +117,7 @@ class ImageWidget(QtWidgets.QLabel):
         Also updates the currently selected bbox in the main window.
         """
         super().mousePressEvent(event)
-        for i, bbox in enumerate(self.parent.bboxes):
+        for i, bbox in enumerate(self.parent.img_bboxes):
             selected = False
             for j, point in enumerate(bbox):
                 # If cursor is in dragging circle
@@ -135,9 +135,9 @@ class ImageWidget(QtWidgets.QLabel):
                 selected = True
 
             if selected:
-                self.parent.color_change = len(self.parent.bboxes)*[False]
+                self.parent.color_change = len(self.parent.img_bboxes)*[False]
                 self.parent.color_change[i] = True
-                self.parent.img_id_idx = i
+                self.parent.img_bbox_idx = i
                 self.parent.update_text_list_ui()
                 self.parent.update_ui()
                 break
@@ -152,7 +152,7 @@ class ImageWidget(QtWidgets.QLabel):
         """Update bounding box to mouse while dragging."""
         super().mouseMoveEvent(event)
         if self.drag_mode and self.last_mouse_pos:
-            bbox = self.parent.bboxes[self.drag_mode.bbox_idx]
+            bbox = self.parent.img_bboxes[self.drag_mode.bbox_idx]
             delta = Point(
                 event.pos().x() - self.last_mouse_pos[0],
                 event.pos().y() - self.last_mouse_pos[1]
