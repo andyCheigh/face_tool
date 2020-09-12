@@ -2,7 +2,8 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QPolygon
 
-from . import Point
+from .point import Point
+
 
 class _DragMode:
     """Index of current bounding box being modified."""
@@ -91,14 +92,14 @@ class ImageWidget(QtWidgets.QLabel):
                 painter.setBrush(QtGui.QBrush(Qt.blue))  # Fill blue
 
             else:
-                if self.parent.ui.save_alert.text() == 'Not in the list':
+                if self.parent.statusLabel.text() == 'Not in the list':
                     painter.setPen(QtGui.QPen(Qt.red, 3))
                     painter.setBrush(QtGui.QBrush(Qt.red))
 
                 else:
                     painter.setPen(QtGui.QPen(Qt.green, 3))
                     painter.setBrush(QtGui.QBrush(Qt.green))
-                    
+
                 # Draw bounding box
                 painter.setBrush(Qt.NoBrush)  # No fill
                 painter.drawPolygon(self.bbox_to_polygon(bbox))
@@ -136,7 +137,7 @@ class ImageWidget(QtWidgets.QLabel):
             if selected:
                 self.parent.color_change = len(self.parent.bboxes)*[False]
                 self.parent.color_change[i] = True
-                self.parent.text_id = i
+                self.parent.img_id_idx = i
                 self.parent.update_text_list_ui()
                 self.parent.update_ui()
                 break
