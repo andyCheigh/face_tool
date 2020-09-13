@@ -138,7 +138,7 @@ class ImageWidget(QtWidgets.QLabel):
                 self.parent.color_change = len(self.parent.img_bboxes)*[False]
                 self.parent.color_change[i] = True
                 self.parent.img_bbox_idx = i
-                self.parent.update_text_list_ui()
+                self.parent.update_id_list_ui()
                 self.parent.update_ui()
                 break
 

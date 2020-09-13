@@ -6,8 +6,9 @@ import codecs
 import shutil
 import cv2
 from PyQt5 import QtGui, uic
-from PyQt5.QtWidgets import QFileDialog, QMainWindow
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QAbstractItemView
 
+from .id_dialog import IDDialog
 from .point import Point
 from .image_widget import ImageWidget
 
@@ -36,6 +37,10 @@ class MainWindow(QMainWindow):
         self.imgWidget = ImageWidget(self, objectName="img")
         self.mainLayout.insertWidget(0, self.imgWidget)
 
+        # Make list items non-editable
+        self.fileList.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.idList.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
         self.loadAction.triggered.connect(self.load_action)
         self.saveAction.triggered.connect(self.save_action)
         self.deleteAction.triggered.connect(self.delete_action)
@@ -43,6 +48,7 @@ class MainWindow(QMainWindow):
         self.entireImageAction.triggered.connect(self.entire_image_action)
         self.prevPageButton.clicked.connect(self.prev_button_action)
         self.nextPageButton.clicked.connect(self.next_button_action)
+        self.idDialogButton.clicked.connect(self.id_dialog_button_action)
         self.currentPageEdit.returnPressed.connect(self.current_page_action)
         self.fileList.selectionChanged = self.file_selection_changed
         self.idList.selectionChanged = self.id_selection_changed
@@ -149,8 +155,7 @@ class MainWindow(QMainWindow):
         self.color_change = len(self.img_bboxes) * [False]
 
         self.img_bbox_idx = 0
-        self.update_id_combo_box_ui()
-        self.update_text_list_ui()
+        self.update_id_list_ui()
 
     def update_ui(self):
         """Update all ui elements except lists."""
@@ -177,8 +182,6 @@ class MainWindow(QMainWindow):
         self.idList.setCurrentIndex(
             self.idList.model().createIndex(self.img_bbox_idx if self.img_bbox_idx else 0, 0))
 
-        self.update_id_combo_box_ui()
-
     def update_file_list_ui(self):
         """Update model for file list."""
         model = QtGui.QStandardItemModel()
@@ -187,27 +190,13 @@ class MainWindow(QMainWindow):
 
         self.fileList.setModel(model)
 
-    def update_text_list_ui(self):
+    def update_id_list_ui(self):
         """Update model for text list."""
         model = QtGui.QStandardItemModel()
         for name in self.img_ids:
             model.appendRow(QtGui.QStandardItem(name))
 
         self.idList.setModel(model)
-
-    def update_id_combo_box_ui(self):
-        """Update model for id list."""
-        with open('id_cand_list.txt', 'r') as f:  # TODO don't hardcode list path
-            items = f.read().splitlines()
-
-        if self.img_ids[self.img_bbox_idx] not in items:  # Add current id if not present in list
-            items.insert(0, self.img_ids[self.img_bbox_idx])
-            self.statusLabel.setText("Not in the list")
-
-        self.idComboBox.setCurrentIndex(-1)
-        self.idComboBox.clear()
-        self.idComboBox.addItems(items)
-        self.idComboBox.setCurrentIndex(items.index(self.img_ids[self.img_bbox_idx]))
 
     def prev_button_action(self):
         """Go to previous image, do nothing if already at beginning."""
@@ -230,12 +219,15 @@ class MainWindow(QMainWindow):
             self.process_image()
             self.update_ui()
 
+    def id_dialog_button_action(self):
+        dialog = IDDialog(self)
+        dialog.exec_()
+
     def save_action(self):
         """Save data back to json file."""
         try:
             # check if the input can be converted to int
-            self.img_ids[self.img_bbox_idx] = self.idComboBox.currentText()
-            self.update_text_list_ui()
+            self.update_id_list_ui()
 
             self.img_json['dataset_info']['attributes']['answer_refined'] = True
 
@@ -247,17 +239,19 @@ class MainWindow(QMainWindow):
                 self.img_json['object_info']['face']['result']['bboxes'].append([0, 0, 0, 0])
                 for idx2, p in enumerate(bbox):
                     if idx2 == 0:
-                        self.img_json['object_info']['face']['result']['bboxes'][idx1][0] = p.x/self.img_width
-                        self.img_json['object_info']['face']['result']['bboxes'][idx1][1] = p.y/self.img_height
+                        self.img_json['object_info']['face']['result']['bboxes'][idx1][0] = \
+                            p.x / self.img_width
+                        self.img_json['object_info']['face']['result']['bboxes'][idx1][1] = \
+                            p.y / self.img_height
 
                     if idx2 == 1:
                         self.img_json['object_info']['face']['result']['bboxes'][idx1][2] = \
-                            p.x/self.img_width - \
+                            p.x / self.img_width - \
                             self.img_json['object_info']['face']['result']['bboxes'][idx1][0]
 
                     if idx2 == 3:
                         self.img_json['object_info']['face']['result']['bboxes'][idx1][3] = \
-                            p.y/self.img_height - \
+                            p.y / self.img_height - \
                             self.img_json['object_info']['face']['result']['bboxes'][idx1][1]
 
             original_file = f"{self.img_json_file}~"
@@ -278,7 +272,7 @@ class MainWindow(QMainWindow):
         if self.img_bbox_idx == len(self.img_bboxes):
             self.img_bbox_idx -= 1
 
-        self.update_text_list_ui()
+        self.update_id_list_ui()
         self.update_ui()
 
     def new_box_action(self):
@@ -286,7 +280,7 @@ class MainWindow(QMainWindow):
         self.img_bboxes.append([Point(0, 0), Point(100, 0), Point(100, 100), Point(0, 100)])
         self.img_ids.append("--추가해주세요--")
 
-        self.update_text_list_ui()
+        self.update_id_list_ui()
         self.update_ui()
 
     def entire_image_action(self):
