@@ -111,6 +111,11 @@ class ImageWidget(QtWidgets.QLabel):
                                     ImageWidget.DRAG_RADIUS * 2,
                                     ImageWidget.DRAG_RADIUS * 2)
 
+            # Draw text ID
+            scaled = self.img_to_qt(bbox[0])
+            painter.setPen(QtGui.QPen(Qt.black))
+            painter.drawText(scaled.x + 10, scaled.y + 20, self.parent.img_ids[i])
+
     def mousePressEvent(self, event):
         """Checks if the drag is changing size, position, or neither when mouse is pressed.
 
