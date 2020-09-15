@@ -10,9 +10,9 @@ class IDDialog(QDialog):
 
         uic.loadUi("id_dialog.ui", self)
 
-        # Make list non-editable
-        self.idList.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.idList.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make list non-editable
         self.idList.selectionChanged = self.selection_changed
+        self.idFilter.textChanged.connect(self.text_changed)
 
         with open('id_cand_list.txt', 'r') as file:  # TODO don't hardcode list path
             self.items = file.read().splitlines()
@@ -30,11 +30,18 @@ class IDDialog(QDialog):
         for item in self.items:
             model.appendRow(QStandardItem(item))
 
-        index = self.items.index(self.parent.img_ids[self.parent.img_bbox_idx])
         self.idList.setModel(model)
-        self.idList.setCurrentIndex(self.idList.model().createIndex(index, 0))
 
     def selection_changed(self, selected, _):
+        """Set img id to current selected item in list."""
         if len(selected.indexes()) > 0:
             self.parent.img_ids[self.parent.img_bbox_idx] = self.items[selected.indexes()[0].row()]
             self.parent.update_id_list_ui()
+
+    def text_changed(self, text):
+        """Filter img list for specific string."""
+        if text.isspace():
+            return
+
+        for (i, item) in enumerate(self.items):
+            self.idList.setRowHidden(i, text.lower() not in item.lower())
