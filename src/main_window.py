@@ -314,7 +314,14 @@ class MainWindow(QMainWindow):
             return
         self.img_bbox_idx = indexes[0].row()
         if self.img_bboxes:
-            self.color_change = len(self.img_bboxes) * [False]
-            self.color_change[self.img_bbox_idx] = True
+            self.color_change = len(self.img_bboxes) * [0]
+            # Not in list
+            with open('id_cand_list.txt', 'r') as file:
+                items = file.read().splitlines()
+            for i, name in enumerate(self.img_ids):
+                if name not in items:
+                    self.color_change[i] = 2
+
+            self.color_change[self.img_bbox_idx] = 1
 
         self.update_ui()

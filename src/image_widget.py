@@ -81,8 +81,11 @@ class ImageWidget(QtWidgets.QLabel):
         super().paintEvent(event)
         painter = QtGui.QPainter(self)
 
+        with open('id_cand_list.txt', 'r') as file:
+            items = file.read().splitlines()
+
         for i, bbox in enumerate(self.parent.img_bboxes):
-            if not self.parent.color_change[i]:
+            if self.parent.color_change[i] == 0:
                 painter.setPen(QtGui.QPen(Qt.blue, 3))
                 # Draw bounding box
                 painter.setBrush(Qt.NoBrush)  # No fill
@@ -91,18 +94,17 @@ class ImageWidget(QtWidgets.QLabel):
                 # Draw dragging handles
                 painter.setBrush(QtGui.QBrush(Qt.blue))  # Fill blue
 
-            else:
-                if self.parent.statusLabel.text() == 'Not in the list':
-                    painter.setPen(QtGui.QPen(Qt.red, 3))
-                    painter.setBrush(QtGui.QBrush(Qt.red))
+            elif self.parent.color_change[i] == 1:
+                painter.setPen(QtGui.QPen(Qt.green, 3))
+                painter.setBrush(QtGui.QBrush(Qt.green))
 
-                else:
-                    painter.setPen(QtGui.QPen(Qt.green, 3))
-                    painter.setBrush(QtGui.QBrush(Qt.green))
+            else:
+                painter.setPen(QtGui.QPen(Qt.red, 3))
+                painter.setBrush(QtGui.QBrush(Qt.red))
 
                 # Draw bounding box
-                painter.setBrush(Qt.NoBrush)  # No fill
-                painter.drawPolygon(self.bbox_to_polygon(bbox))
+            painter.setBrush(Qt.NoBrush)  # No fill
+            painter.drawPolygon(self.bbox_to_polygon(bbox))
 
             for point in bbox:
                 scaled = self.img_to_qt(point)

@@ -20,7 +20,6 @@ class IDDialog(QDialog):
         # Add current id if not present in list
         if self.parent.img_ids[self.parent.img_bbox_idx] not in self.items:
             self.items.insert(0, self.parent.img_ids[self.parent.img_bbox_idx])
-            self.parent.statusLabel.setText("Not in the list")
 
         self.update_ui()
 
