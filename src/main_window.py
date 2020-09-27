@@ -201,6 +201,7 @@ class MainWindow(QMainWindow):
     def prev_button_action(self):
         """Go to previous image, do nothing if already at beginning."""
         if self.img_file_idx > 0:
+            self.save_action()
             self.img_file_idx -= 1
             self.process_image()
             self.update_ui()
@@ -208,6 +209,7 @@ class MainWindow(QMainWindow):
     def next_button_action(self):
         """Go to next image, do nothing if already at end."""
         if self.img_file_idx < len(self.img_files) - 1:
+            self.save_action()
             self.img_file_idx += 1
             self.process_image()
             self.update_ui()
@@ -220,8 +222,11 @@ class MainWindow(QMainWindow):
             self.update_ui()
 
     def id_dialog_button_action(self):
-        dialog = IDDialog(self)
-        dialog.exec_()
+        try:
+            dialog = IDDialog(self)
+            dialog.exec_()
+        except (TypeError, IndexError):
+            self.statusLabel.setText("No Box available")
 
     def save_action(self):
         """Save data back to json file."""
@@ -302,6 +307,7 @@ class MainWindow(QMainWindow):
         if len(indexes) <= 0:
             return
 
+        self.save_action()
         self.img_file_idx = indexes[0].row()
 
         self.process_image()
