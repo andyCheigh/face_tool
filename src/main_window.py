@@ -146,10 +146,9 @@ class MainWindow(QMainWindow):
         # Turn JSON list into list of Points
         self.img_bboxes = list(map(lambda a: [
             Point(self.img_width * a[0], self.img_height * a[1]),
-            Point(self.img_width * a[0] + self.img_width * a[2], self.img_height * a[1]),
-            Point(self.img_width * a[0] + self.img_width * a[2],
-                  self.img_height * a[1] + self.img_height * a[3]),
-            Point(self.img_width * a[0], self.img_height * a[1] + self.img_height * a[3])
+            Point(self.img_width * a[2], self.img_height * a[1]),
+            Point(self.img_width * a[2], self.img_height * a[3]),
+            Point(self.img_width * a[0], self.img_height * a[3])
         ], self.img_json['object_info']['face']['result']['bboxes']))
 
         self.color_change = len(self.img_bboxes) * [False]
@@ -249,15 +248,11 @@ class MainWindow(QMainWindow):
                         self.img_json['object_info']['face']['result']['bboxes'][idx1][1] = \
                             p.y / self.img_height
 
-                    if idx2 == 1:
+                    if idx2 == 2:
                         self.img_json['object_info']['face']['result']['bboxes'][idx1][2] = \
-                            p.x / self.img_width - \
-                            self.img_json['object_info']['face']['result']['bboxes'][idx1][0]
-
-                    if idx2 == 3:
+                            p.x / self.img_width
                         self.img_json['object_info']['face']['result']['bboxes'][idx1][3] = \
-                            p.y / self.img_height - \
-                            self.img_json['object_info']['face']['result']['bboxes'][idx1][1]
+                            p.y / self.img_height
 
             original_file = f"{self.img_json_file}~"
             shutil.copy2(self.img_json_file, original_file)
