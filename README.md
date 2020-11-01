@@ -1,6 +1,6 @@
 # Face Tool
 
-Face Tool provides a convenient GUI for non-tech users to pre-process face images.
+Face Tool provides a convenient GUI for non-tech users to draw bounding boxes around faces in the image.
 
 ### Functions
 1) Adjust size of the bounding boxes
